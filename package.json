@@ -1,8 +1,8 @@
 {
   "name": "dect",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "decorator testing in the browser",
-  "main": "dist/index.js",
+  "main": "lib/index.js",
   "npm": {
     "esModules": true
   },

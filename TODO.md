@@ -3,3 +3,4 @@
 - add eslint
 - fix package deps
 - cite decorator articles
+- build on publish

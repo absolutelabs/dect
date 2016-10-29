@@ -4,17 +4,17 @@
 // https://github.com/insin/nwb/blob/master/docs/Configuration.md#webpack-configuration
 // https://webpack.github.io/docs/configuration.html#output-devtoollinetoline
 module.exports = {
-  type: 'react-app',
+  type: 'web-module',
   babel: {
     plugins: ['transform-async-to-generator', 'transform-flow-strip-types'],
   },
   webpack: {
     extra: {
       devtool: '#source-map',
-      // output: {
-      //   filename: 'index.js',
-      //   sourceMapFilename: '[file].map'
-      // },
+      output: {
+        filename: 'index.js',
+        sourceMapFilename: '[file].map'
+      },
       // resolve: {
       //   modulesDirectories: ['node_modules', 'src/npm_modules', 'src'],
       // }
