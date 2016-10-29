@@ -1,0 +1,5 @@
+- add readme
+- finish todos
+- add eslint
+- fix package deps
+- cite decorator articles
