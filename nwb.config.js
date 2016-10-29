@@ -11,10 +11,10 @@ module.exports = {
   webpack: {
     extra: {
       devtool: '#source-map',
-      output: {
-        filename: 'index.js',
-        sourceMapFilename: '[file].map'
-      },
+      // output: {
+      //   filename: 'index.js',
+      //   sourceMapFilename: '[file].map'
+      // },
       // resolve: {
       //   modulesDirectories: ['node_modules', 'src/npm_modules', 'src'],
       // }
