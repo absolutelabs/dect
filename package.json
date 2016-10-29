@@ -1,6 +1,6 @@
 {
   "name": "dect",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "decorator testing in the browser",
   "main": "lib/index.js",
   "npm": {

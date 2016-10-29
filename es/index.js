@@ -20,9 +20,45 @@ var TEST_TIMEOUT_VALUE = 1 >> 2;
 var debug = {
   benchmark: true,
   rendered: true,
-  stateUpdates: true
+  stateUpdates: true,
+  stressTest: true,
+  notifyErrors: true,
+  notifySuccess: false
 };
+
+// setting reference to window
+// so it can be configured in test file
 window.debug = debug;
+debug = window.debug;
+
+// @TODO: could set up as a cb fuunction
+// request permission on page load
+document.addEventListener('DOMContentLoaded', function () {
+  if (!Notification) {
+    alert('Desktop notifications not available in your browser. Try Chromium.');
+    return;
+  }
+
+  if (Notification.permission !== 'granted') Notification.requestPermission();
+});
+
+function notify(msg) {
+  if (Notification.permission !== 'granted') {
+    Notification.requestPermission();
+  }
+
+  var notification = new Notification('Notification title', {
+    icon: 'https://cdn3.iconfinder.com/data/icons/line/36/beaker-512.png',
+    body: msg
+  });
+
+  // @TODO:
+  // - [ ] add listener & config for url
+  // - [ ] do url parsing for params
+  notification.onclick = function () {
+    window.location.href = window.location.href + '?testing...';
+  };
+}
 
 // --------------------------------- decorators
 
@@ -62,16 +98,27 @@ function autoarrow(target, name, descriptor) {
   };
 }
 
-// @TODO:
-// - [ ] could decorate, take the arguments using reflection or regex
-//       and then use the `debug` values on that
-//
-// - [ ] could use decorator to create the chai.expects
-// - [ ] use gerkin
-//
-// - [ ] could also apply to class and all are testable?
-//
-// @IDEA: could use decorators to do functions inside of the functions...
+/**
+ *
+ * @TODO:
+ * - [ ] could decorate, take the arguments using reflection or regex
+ *       and then use the `debug` values on that
+ *
+ * - [ ] could use decorator to create the chai.expects
+ * - [ ] use gerkin
+ *
+ * - [ ] could also apply to class and all are testable?
+ *
+ * @IDEA: could use decorators to do functions inside of the functions...
+ *
+ * - [ ] have one to trigger success
+ *
+ * *************
+ *
+ * @description when used, wraps method and... \/
+ * @throws error if argument is timeout const
+ *
+ */
 function testMethod(target, name, descriptor) {
   // obtain the original function
   var fn = descriptor.value;
@@ -79,7 +126,11 @@ function testMethod(target, name, descriptor) {
   // create a new function that throws error if arg is TEST_TIMEOUT_VALUE
   var newFn = function newFn() {
     if (arguments[0] === TEST_TIMEOUT_VALUE) {
-      throw new Error(name + ' failed... never was called');
+      var msg = name + ' failed... never was called';
+      if (notifyError) {
+        notify(msg);
+      }
+      throw new Error(msg);
     }
 
     return fn.apply(target, arguments);
@@ -89,48 +140,6 @@ function testMethod(target, name, descriptor) {
   // and return the new descriptor
   descriptor.value = newFn;
   return descriptor;
-}
-
-// @TODO: what was I going to do with this?
-function testMethod(target, name, descriptor) {
-  // obtain the original function
-  var fn = descriptor.value;
-  if (typeof fn !== 'function') {
-    throw new Error('@autobind decorator can only be applied to methods not: ' + (typeof fn === 'undefined' ? 'undefined' : _typeof(fn)));
-  }
-
-  // In IE11 calling Object.defineProperty has a side-effect of evaluating the
-  // getter for the property which is being replaced. This causes infinite
-  // recursion and an "Out of stack space" error.
-  var definingProperty = false;
-
-  return {
-    configurable: true,
-    get: function get() {
-      var newFn = function newFn() {
-        var className = this.constructor.name;
-        return fn.apply(this, arguments);
-      };
-
-      // for ie11
-      if (definingProperty || this === target.prototype || this.hasOwnProperty(name)) {
-        console.log('autobind:equals');
-        return boundFn;
-      }
-
-      // we then overwrite the origin descriptor value
-      // and return the new descriptor
-      var boundFn = newFn;
-      definingProperty = true;
-      Object.defineProperty(this, name, {
-        value: boundFn,
-        configurable: true,
-        writable: true
-      });
-      definingProperty = false;
-      return boundFn;
-    }
-  };
 }
 
 /**
@@ -162,6 +171,9 @@ function testMethodTimedWithTrigger(selector, eventName, timeout, trigger, failT
 
 function testMethodStress(selector, eventName, times, timeout, intervalTime) {
   return function (target, name, descriptor) {
+    // only run if stressTest is enabled
+    if (!debug.stressTest) return descriptor;
+
     // obtain the original function
     var fn = descriptor.value;
 

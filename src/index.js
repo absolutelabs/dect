@@ -23,12 +23,49 @@ const TEST_TIMEOUT_VALUE = 1 >> 2
 // - [ ] might want benchmark as obj
 // - [ ] want this available globally & in the test file OR a config
 // - [ ] could also hijack the console log like I did in cs
-const debug = {
+let debug = {
   benchmark: true,
   rendered: true,
   stateUpdates: true,
+  stressTest: true,
+  notifyErrors: true,
+  notifySuccess: false,
 }
+
+// setting reference to window
+// so it can be configured in test file
 window.debug = debug
+debug = window.debug
+
+// @TODO: could set up as a cb fuunction
+// request permission on page load
+document.addEventListener('DOMContentLoaded', function() {
+  if (!Notification) {
+    alert('Desktop notifications not available in your browser. Try Chromium.')
+    return
+  }
+
+  if (Notification.permission !== 'granted')
+    Notification.requestPermission()
+})
+
+function notify(msg) {
+  if (Notification.permission !== 'granted') {
+    Notification.requestPermission()
+  }
+
+  const notification = new Notification('Notification title', {
+    icon: 'https://cdn3.iconfinder.com/data/icons/line/36/beaker-512.png',
+    body: msg,
+  })
+
+  // @TODO:
+  // - [ ] add listener & config for url
+  // - [ ] do url parsing for params
+  notification.onclick = function() {
+    window.location.href = window.location.href + '?testing...'
+  }
+}
 
 
 // --------------------------------- decorators
@@ -73,16 +110,27 @@ function autoarrow(target: Class, name: string, descriptor: ObjDef): ObjDef {
 }
 
 
-// @TODO:
-// - [ ] could decorate, take the arguments using reflection or regex
-//       and then use the `debug` values on that
-//
-// - [ ] could use decorator to create the chai.expects
-// - [ ] use gerkin
-//
-// - [ ] could also apply to class and all are testable?
-//
-// @IDEA: could use decorators to do functions inside of the functions...
+/**
+ *
+ * @TODO:
+ * - [ ] could decorate, take the arguments using reflection or regex
+ *       and then use the `debug` values on that
+ *
+ * - [ ] could use decorator to create the chai.expects
+ * - [ ] use gerkin
+ *
+ * - [ ] could also apply to class and all are testable?
+ *
+ * @IDEA: could use decorators to do functions inside of the functions...
+ *
+ * - [ ] have one to trigger success
+ *
+ * *************
+ *
+ * @description when used, wraps method and... \/
+ * @throws error if argument is timeout const
+ *
+ */
 function testMethod(target: Class, name: string, descriptor: ObjDef): ObjDef {
   // obtain the original function
   const fn = descriptor.value
@@ -90,7 +138,11 @@ function testMethod(target: Class, name: string, descriptor: ObjDef): ObjDef {
   // create a new function that throws error if arg is TEST_TIMEOUT_VALUE
   const newFn = function() {
     if (arguments[0] === TEST_TIMEOUT_VALUE) {
-      throw new Error(`${name} failed... never was called`)
+      const msg = `${name} failed... never was called`
+      if (notifyError) {
+        notify(msg)
+      }
+      throw new Error(msg)
     }
 
     return fn.apply(target, arguments)
@@ -100,49 +152,6 @@ function testMethod(target: Class, name: string, descriptor: ObjDef): ObjDef {
   // and return the new descriptor
   descriptor.value = newFn
   return descriptor
-}
-
-
-// @TODO: what was I going to do with this?
-function testMethod(target: Class, name: string, descriptor: ObjDef): ObjDef {
-  // obtain the original function
-  const fn = descriptor.value
-  if (typeof fn !== 'function') {
-    throw new Error(`@autobind decorator can only be applied to methods not: ${typeof fn}`)
-  }
-
-  // In IE11 calling Object.defineProperty has a side-effect of evaluating the
-  // getter for the property which is being replaced. This causes infinite
-  // recursion and an "Out of stack space" error.
-  let definingProperty = false
-
-  return {
-    configurable: true,
-    get() {
-      const newFn = function() {
-        const className = this.constructor.name
-        return fn.apply(this, arguments)
-      }
-
-      // for ie11
-      if (definingProperty || this === target.prototype || this.hasOwnProperty(name)) {
-        console.log('autobind:equals')
-        return boundFn
-      }
-
-      // we then overwrite the origin descriptor value
-      // and return the new descriptor
-      const boundFn = newFn
-      definingProperty = true
-      Object.defineProperty(this, name, {
-        value: boundFn,
-        configurable: true,
-        writable: true
-      })
-      definingProperty = false
-      return boundFn
-    }
-  }
 }
 
 
@@ -175,6 +184,9 @@ function testMethodTimedWithTrigger(selector: string, eventName: string, timeout
 
 function testMethodStress(selector: string, eventName: string, times: number, timeout: number, intervalTime: number): Function {
   return function(target: Class, name: string, descriptor: ObjDef): ObjDef {
+    // only run if stressTest is enabled
+    if (!debug.stressTest) return descriptor
+
     // obtain the original function
     const fn = descriptor.value
 
