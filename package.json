@@ -1,13 +1,15 @@
 {
   "name": "dect",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "decorator testing in the browser",
   "main": "lib/index.js",
   "npm": {
     "esModules": true
   },
   "files": [
-    "src"
+    "src",
+    "lib",
+    "es"
   ],
   "scripts": {
     "build": "nwb build",
