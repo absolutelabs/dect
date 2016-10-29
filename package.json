@@ -2,12 +2,20 @@
   "name": "dect",
   "version": "0.0.3",
   "description": "decorator testing in the browser",
-  "main": "src/index.js",
-  "scripts": {
-    "flow": "flow; test $? -eq 0 -o $? -eq 2"
+  "main": "dist/index.js",
+  "npm": {
+    "esModules": true
   },
-  "peerDependencies": {
-    "react": "15.x"
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "nwb build",
+    "clean": "nwb clean",
+    "start": "nwb serve",
+    "test": "nwb test",
+    "test:watch": "nwb test --server",
+    "flow": "flow; test $? -eq 0 -o $? -eq 2"
   },
   "devDependencies": {
     "babel-eslint": "6.1.2",

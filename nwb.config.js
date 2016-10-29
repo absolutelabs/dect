@@ -6,23 +6,23 @@
 module.exports = {
   type: 'react-app',
   babel: {
-    plugins: ['transform-async-to-generator', 'transform-flow-strip-types']
+    plugins: ['transform-async-to-generator', 'transform-flow-strip-types'],
   },
   webpack: {
     extra: {
       devtool: '#source-map',
-      output: {
-        filename: 'index.js',
-        sourceMapFilename: '[file].map'
-      },
-      resolve: {
-        modulesDirectories: ['node_modules', 'src/npm_modules', 'src'],
-        alias: {
-          'reflux': 'core',
-          'react': 'preact-compat',
-          'react-dom': 'preact-compat',
-        }
-      }
+      // output: {
+      //   filename: 'index.js',
+      //   sourceMapFilename: '[file].map'
+      // },
+      // resolve: {
+      //   modulesDirectories: ['node_modules', 'src/npm_modules', 'src'],
+      // }
     }
+  },
+  npm: {
+    global: '',
+    jsNext: true,
+    umd: false
   }
 }
