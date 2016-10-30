@@ -1,5 +1,4 @@
 // @flow
-import chai, {expect} from 'chai'
 import sizzle from 'sizzle'
 import notify from 'dno'
 
@@ -57,10 +56,10 @@ function autoarrow(target: Class, name: string, descriptor: ObjDef): ObjDef {
         fn = descriptor.value
 
       const boundFn = function() {
-        if (!fn) {
-          if (this[name]) {
-          }
-        }
+        // if (!fn) {
+        //   if (this[name]) {
+        //   }
+        // }
 
         if (typeof this.context === 'object')
           return fn.apply(this, arguments)
@@ -107,7 +106,7 @@ function testMethod(target: Class, name: string, descriptor: ObjDef): ObjDef {
   const fn = descriptor.value
 
   // create a new function that throws error if arg is TEST_TIMEOUT_VALUE
-  const newFn = function() {
+  const testMethodCb = function() {
     if (arguments[0] === TEST_TIMEOUT_VALUE) {
       const msg = `${name} failed... never was called`
       if (debug.notifyErrors) {
@@ -125,10 +124,9 @@ function testMethod(target: Class, name: string, descriptor: ObjDef): ObjDef {
 
   // we then overwrite the origin descriptor value
   // and return the new descriptor
-  descriptor.value = newFn
+  descriptor.value = testMethodCb
   return descriptor
 }
-
 
 /**
  * @TODO: make trigger the generator
@@ -137,11 +135,11 @@ function testMethodTimedWithTrigger(selector: string, eventName: string, timeout
   return function(target: Class, name: string, descriptor: ObjDef): ObjDef {
     // obtain the original function
     const fn = descriptor.value
-    let failed
+    let failed = null
 
     // create a new function that
     // selects something, triggers it, times out to call itself
-    const newFn = function() {
+    const timedWithTriggerCb = function() {
       // timeout to call event using selector
       setTimeout(function() {
         console.info(sizzle(selector))
@@ -155,7 +153,7 @@ function testMethodTimedWithTrigger(selector: string, eventName: string, timeout
     }
 
     if (failTimeout) {
-      setTimeout(function() {
+      failed = setTimeout(function() {
         console.log('timed out...')
         console.log(fn)
         console.log(target)
@@ -167,7 +165,7 @@ function testMethodTimedWithTrigger(selector: string, eventName: string, timeout
 
     // we then overwrite the origin descriptor value
     // and return the new descriptor
-    descriptor.value = newFn
+    descriptor.value = timedWithTriggerCb
     return descriptor
   }
 }
@@ -183,7 +181,7 @@ function testMethodStress(selector: string, eventName: string, times: number, ti
     // create a new function that
     // selects something, triggers it, times out to call itself
     // with interval, then after time, clears interval
-    const newFn = function() {
+    const stressCb = function() {
       const fnTimeout = setTimeout(function() {
         const timeoutes = []
         const setIntervals = setInterval(function() {
@@ -199,7 +197,7 @@ function testMethodStress(selector: string, eventName: string, times: number, ti
 
     // we then overwrite the origin descriptor value
     // and return the new descriptor
-    descriptor.value = newFn
+    descriptor.value = stressCb
     return descriptor
   }
 }
@@ -216,14 +214,14 @@ function testMethodTimed(timeout: number) {
     }, timeout)
 
     // timeout to call if it isn't called
-    const newFn = function() {
+    const testMethodTimedCb = function() {
       clearTimeout(window.testMethodTimedTimeout)
       return fn.apply(target, arguments)
     }
 
     // we then overwrite the origin descriptor value
     // and return the new descriptor
-    descriptor.value = newFn
+    descriptor.value = testMethodTimedCb
     return descriptor
   }
 }
@@ -244,7 +242,7 @@ function renderTest(target: Class, name: string, descriptor: ObjDef): ObjDef {
   return {
     configurable: true,
     get() {
-      const newFn = function() {
+      const renderTestCb = function() {
         const className = this.constructor.name
         const targetComponentDidMount = this.componentDidMount
         this.componentDidMount = function() {
@@ -274,7 +272,7 @@ function renderTest(target: Class, name: string, descriptor: ObjDef): ObjDef {
 
       // we then overwrite the origin descriptor value
       // and return the new descriptor
-      const boundFn = newFn
+      const boundFn = renderTestCb
       definingProperty = true
       Object.defineProperty(this, name, {
         value: boundFn,
