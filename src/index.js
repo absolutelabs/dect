@@ -1,6 +1,7 @@
 // @flow
 import chai, {expect} from 'chai'
 import sizzle from 'sizzle'
+import notify from 'dno'
 
 // flowtypes
 type Class = object
@@ -23,6 +24,7 @@ const TEST_TIMEOUT_VALUE = 1 >> 2
 // - [ ] might want benchmark as obj
 // - [ ] want this available globally & in the test file OR a config
 // - [ ] could also hijack the console log like I did in cs
+// - [ ] add to localstorage, use .onSettings in notiify to configure
 let debug = {
   benchmark: true,
   rendered: true,
@@ -36,37 +38,6 @@ let debug = {
 // so it can be configured in test file
 window.debug = debug
 debug = window.debug
-
-// @TODO: could set up as a cb fuunction
-// request permission on page load
-document.addEventListener('DOMContentLoaded', function() {
-  if (!Notification) {
-    alert('Desktop notifications not available in your browser. Try Chromium.')
-    return
-  }
-
-  if (Notification.permission !== 'granted')
-    Notification.requestPermission()
-})
-
-function notify(msg) {
-  if (Notification.permission !== 'granted') {
-    Notification.requestPermission()
-  }
-
-  const notification = new Notification('Notification title', {
-    icon: 'https://cdn3.iconfinder.com/data/icons/line/36/beaker-512.png',
-    body: msg,
-  })
-
-  // @TODO:
-  // - [ ] add listener & config for url
-  // - [ ] do url parsing for params
-  notification.onclick = function() {
-    window.location.href = window.location.href + '?testing...'
-  }
-}
-
 
 // --------------------------------- decorators
 
@@ -139,8 +110,12 @@ function testMethod(target: Class, name: string, descriptor: ObjDef): ObjDef {
   const newFn = function() {
     if (arguments[0] === TEST_TIMEOUT_VALUE) {
       const msg = `${name} failed... never was called`
-      if (notifyError) {
+      if (debug.notifyErrors) {
+        console.log('should be notifying')
         notify(msg)
+        notify(msg + 'ooo')
+        // can test notify
+        // notify(msg + Math.random() * (1000 - 0) + 1)
       }
       throw new Error(msg)
     }
@@ -158,10 +133,11 @@ function testMethod(target: Class, name: string, descriptor: ObjDef): ObjDef {
 /**
  * @TODO: make trigger the generator
  */
-function testMethodTimedWithTrigger(selector: string, eventName: string, timeout: number, trigger, failTimeout): Function {
+function testMethodTimedWithTrigger(selector: string, eventName: string, timeout: number, trigger: mixed, failTimeout: number): Function {
   return function(target: Class, name: string, descriptor: ObjDef): ObjDef {
     // obtain the original function
     const fn = descriptor.value
+    let failed
 
     // create a new function that
     // selects something, triggers it, times out to call itself
@@ -172,7 +148,21 @@ function testMethodTimedWithTrigger(selector: string, eventName: string, timeout
         sizzle(selector)[0][eventName]()
       }, timeout)
 
+      // if it was successfully called
+      // if it wasn't, @testMethod will trigger error and not call this
+      clearTimeout(failed)
       return fn.apply(target, arguments)
+    }
+
+    if (failTimeout) {
+      setTimeout(function() {
+        console.log('timed out...')
+        console.log(fn)
+        console.log(target)
+        console.log(TEST_TIMEOUT_VALUE)
+        fn(TEST_TIMEOUT_VALUE)
+        // fn.apply(target, TEST_TIMEOUT_VALUE)
+      }, failTimeout)
     }
 
     // we then overwrite the origin descriptor value
