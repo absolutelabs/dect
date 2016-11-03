@@ -3,7 +3,7 @@ import sizzle from 'sizzle'
 import notify from 'dno'
 
 // flowtypes
-type Class = object
+type Class = Object
 type ObjectDefinition = {
  set: () => null,
  get: () => mixed,
